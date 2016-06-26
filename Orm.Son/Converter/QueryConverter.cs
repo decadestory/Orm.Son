@@ -75,7 +75,7 @@ namespace Orm.Son.Converter
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            return string.Format("SELECT * FROM {0} WHERE ID={1};", tableName, id);
+            return string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE ID={1};", tableName, id);
         }
 
         public static string SelectSql<T>(this T entity, Expression<Func<T, bool>> func)
@@ -85,7 +85,7 @@ namespace Orm.Son.Converter
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
 
-            return string.Format("SELECT * FROM {0} WHERE {1};", tableName, condition);
+            return string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1};", tableName, condition);
         }
 
         public static string CreateSql<T>(this T entity)
