@@ -3,6 +3,7 @@ using Orm.Son.Linq;
 using Orm.Son.Mapper;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,79 +14,100 @@ namespace Orm.Son.Converter
 {
     internal static class QueryConverter
     {
-        public static string InsertSql<T>(this T entity)
+        public static Tuple<string, List<SqlParameter>> InsertSql<T>(this T entity)
         {
             var types = entity.GetType();
             var infos = types.GetProperties();
+
+
             var tableAttr = types.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : types.Name;
             var names = new List<string>();
             var values = new List<string>();
+            var sqlParamsVal = new List<SqlParameter>();
+
             foreach (var item in infos)
             {
                 if (item.Name.Equals("Id")) continue;
                 var val = item.GetValue(entity, null);
                 if (item.PropertyType == typeof(DateTime) && (DateTime)val == default(DateTime)) continue;
                 names.Add(item.Name);
-                if (TypeOperator.IsSqlString(item.PropertyType))
-                    values.Add("'" + val.ToString() + "'");
-                else
-                    values.Add(val.ToString());
+                sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
+                values.Add("@" + item.Name);
             }
-            return string.Format("INSERT INTO {0}({1}) VALUES({2});SELECT @@IDENTITY;", tableName, string.Join(",", names), string.Join(",", values));
+            var sql = string.Format("INSERT INTO {0}({1}) VALUES({2});SELECT @@IDENTITY;", tableName, string.Join(",", names), string.Join(",", values));
+            return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
-        public static string DeleteSql<T>(this T entity, object id)
+        public static Tuple<string, List<SqlParameter>> DeleteSql<T>(this T entity, object id)
         {
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            return string.Format("DELETE {0} WHERE ID={1}; SELECT @@ROWCOUNT;", tableName.ToUpper(), id);
+
+            var sqlParamsVal = new List<SqlParameter> {
+                new SqlParameter("@Id",id)
+            };
+
+            var sql = string.Format("DELETE {0} WHERE ID=@Id; SELECT @@ROWCOUNT;", tableName.ToUpper());
+            return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
-        public static string UpdateSql<T>(this T entity)
-        {
-            var types = entity.GetType();
-            var infos = types.GetProperties();
-            var tableAttr = types.GetCustomAttributes(typeof(TableNameAttribute), true);
-            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : types.Name;
-            object id = null;
-            var sets = new List<string>();
-            foreach (var item in infos)
-            {
-                var val = item.GetValue(entity, null);
-
-                if (item.Name.Equals("Id"))
-                {
-                    id = TypeOperator.IsSqlString(item.PropertyType) ? "'" + val + "'" : val;
-                    continue;
-                }
-
-                if (TypeOperator.IsSqlString(item.PropertyType))
-                    sets.Add(item.Name + "=" + "'" + val.ToString() + "'");
-                else
-                    sets.Add(item.Name + "=" + val.ToString());
-            }
-            var sql = string.Format("UPDATE {0} SET {1} WHERE ID={2};SELECT @@ROWCOUNT;", tableName, string.Join(",", sets), id.ToString());
-            return sql;
-        }
-
-        public static string SelectSql<T>(this T entity, object id)
-        {
-            var et = typeof(T);
-            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
-            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            return string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE ID={1};", tableName, id);
-        }
-
-        public static string SelectSql<T>(this T entity, Expression<Func<T, bool>> func)
+        public static Tuple<string, List<SqlParameter>> DeleteSql<T>(this T entity, Expression<Func<T, bool>> func)
         {
             var condition = ExpressionResolve.Resolve(func);
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var sql = string.Format("DELETE {0} WHERE {1}; SELECT @@ROWCOUNT;", tableName.ToUpper(), condition.Item1);
+            return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
+        }
 
-            return string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1};", tableName, condition);
+        public static Tuple<string, List<SqlParameter>> UpdateSql<T>(this T entity)
+        {
+            var types = entity.GetType();
+            var infos = types.GetProperties();
+            var tableAttr = types.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : types.Name;
+            var sqlParamsVal = new List<SqlParameter>();
+            var sets = new List<string>();
+            var id = string.Empty;
+
+            foreach (var item in infos)
+            {
+                var val = item.GetValue(entity, null);
+                if (item.Name.Equals("Id"))
+                {
+                    sqlParamsVal.Add(new SqlParameter("@Id", val));
+                    id = val.ToString();
+                    continue;
+                }
+                sets.Add(item.Name + "=@" + item.Name);
+                sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
+            }
+
+            var sql = string.Format("UPDATE {0} SET {1} WHERE ID=@Id;SELECT @@ROWCOUNT;", tableName, string.Join(",", sets));
+            return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
+        }
+
+        public static Tuple<string, List<SqlParameter>> SelectSql<T>(this T entity, object id)
+        {
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var sqlParamsVal = new List<SqlParameter> { new SqlParameter("@Id", id) };
+            var sql = string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE ID=@Id;", tableName);
+            return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
+        }
+
+        public static Tuple<string, List<SqlParameter>> SelectSql<T>(this T entity, Expression<Func<T, bool>> func)
+        {
+            var condition = ExpressionResolve.Resolve(func);
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var sql = string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1};", tableName, condition.Item1);
+            return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
         }
 
         public static string CreateSql<T>(this T entity)
@@ -94,7 +116,7 @@ namespace Orm.Son.Converter
             var cols = new List<string>();
             var infos = et.GetProperties();
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
-            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name: et.Name;
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
 
             var descriptions = new StringBuilder();
 

@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Orm.Son.Test.Connections;
 using Orm.Son.Core;
 using Orm.Son.Test.Entities;
+using System.Data.SqlClient;
+using System.Collections.Generic;
 
 namespace Orm.Son.Test
 {
@@ -16,23 +18,44 @@ namespace Orm.Son.Test
             {
                 var obj = new Demo
                 {
-                    Id = 1010082,
-                    Name = "JerryDemo",
+                    Name = "JerryDemoMany1",
                     Age = 10,
                     Score = 56,
                     AddTime = DateTime.Now
                 };
 
-                //var res = db.Insert(obj);
-                //db.Delete<Demo>(1010082);
-                //db.Update(obj);
-                //db.Find<Demo>(1010000);
-                //var data = db.FindMany<Demo>(t =>t.Age.Equals(25));
-                //var data2 = db.FindMany<Demo>(t =>t.Name.EndsWith("erry56471"));
-                //var data3 = db.ExecuteQuery<Demo>("SELECT * FROM DEMO WHERE Name like '%erry56471';");
-                //var data4 = db.ExecuteSql("UPDATE DEMO SET Name='JerryDemo',Age=10,Score=56,AddTime='2016/6/26 12:41:09',IsDel='True' WHERE ID = 1010000; SELECT @@ROWCOUNT;");
-                //var data5 = db.ExecuteSql("INSERT INTO DEMO(Name,Age,Score,AddTime,IsDel) VALUES('JerryDemo',10,56,'2016/6/26 14:04:43','False');SELECT @@IDENTITY;");
-                //var data6 = db.ExecuteSql(" SELECT count(1) FROM DEMO WHERE Age=25");
+                var obj2 = new Demo
+                {
+                    Name = "JerryDemoMany2",
+                    Age = 10,
+                    Score = 56,
+                    AddTime = DateTime.Now
+                };
+
+                var list = new List<Demo> { obj, obj2 };
+
+                var res = db.Insert(obj);
+                var res2 = db.Insert(list);
+                db.Delete<Demo>(1010082);
+                db.Delete<Demo>(t => t.Name == "JerryDemoMany1");
+
+                db.Update(obj);
+                var s = db.Find<Demo>(1010000);
+                var data = db.FindMany<Demo>(t => t.Age < 50 && t.IsDel == false);
+                var data1 = db.FindMany<Demo>(t => t.Age.Equals(25));
+                var data2 = db.FindMany<Demo>(t => t.Name.EndsWith("erry56471"));
+                var data22 = db.FindMany<Demo>(t => t.Name.Contains("erry5"));
+
+                var data3 = db.ExecuteQuery<Demo>("SELECT * FROM DEMO WHERE Name like '%erry56471';");
+                var param33 = new List<SqlParameter> { new SqlParameter("@Name", "erry56471") };
+                var data33 = db.ExecuteQuery<Demo>("SELECT * FROM DEMO WHERE Name like '%'+@Name;", param33);
+
+                var data4 = db.ExecuteSql("UPDATE DEMO SET Name='JerryDemo',Age=10,Score=56,AddTime='2016/6/26 12:41:09',IsDel='True' WHERE ID = 1010000; SELECT @@ROWCOUNT;");
+                var param44 = new List<SqlParameter> { new SqlParameter("@AddTime", "2016/6/26 12:41:09"), new SqlParameter("@IsDel", true) };
+                var data44 = db.ExecuteQuery<Demo>("UPDATE DEMO SET Name='JerryDemo',Age=10,Score=56,AddTime=@AddTime,IsDel=@IsDel WHERE ID = 1010000; SELECT @@ROWCOUNT;", param44);
+
+                var data5 = db.ExecuteSql("INSERT INTO DEMO(Name,Age,Score,AddTime,IsDel) VALUES('JerryDemo',10,56,'2016/6/26 14:04:43','False');SELECT @@IDENTITY;");
+                var data6 = db.ExecuteSql(" SELECT count(1) FROM DEMO WHERE Age=25");
             }
         }
 
@@ -71,15 +94,15 @@ namespace Orm.Son.Test
         {
             using (var db = new TestConnection())
             {
-                //var p = new Product { Name = "产品2", ProductLine = 12, Enable = false };
-                //var res = db.Insert(p);
+                var p = new Product { Name = "产品2", ProductLine = 12, Enable = false };
+                var res = db.Insert(p);
 
-                var cur = db.Find<Product>(3);
+                var cur = db.Find<Product>(res);
                 cur.Enable = true;
                 cur.Name = "修改后的产品";
                 cur.ProductLine = 100;
-                var res = db.Update(cur);
-                
+                var result = db.Update(cur);
+
             }
         }
     }

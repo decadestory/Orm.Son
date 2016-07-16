@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -16,11 +17,11 @@ namespace Orm.Son.Core
         public static int Insert<T>(this IDbConnection dbConn, T column)
         {
             var sql = column.InsertSql();
-            var result = sql.ExeSql(dbConn);
+            var result = sql.ExeSqlWithParams(dbConn);
             return Convert.ToInt32(result);
         }
 
-        public static bool InsertMany<T>(this IDbConnection dbConn, List<T> columns)
+        public static bool Insert<T>(this IDbConnection dbConn, List<T> columns)
         {
             try
             {
@@ -36,21 +37,28 @@ namespace Orm.Son.Core
         public static int Delete<T>(this IDbConnection dbConn, object id)
         {
             var sql = default(T).DeleteSql(id);
-            var result = sql.ExeSql(dbConn);
+            var result = sql.ExeSqlWithParams(dbConn);
+            return Convert.ToInt32(result);
+        }
+
+        public static int Delete<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func)
+        {
+            var sql = default(T).DeleteSql(func);
+            var result = sql.ExeSqlWithParams(dbConn);
             return Convert.ToInt32(result);
         }
 
         public static int Update<T>(this IDbConnection dbConn, T column)
         {
             var sql = column.UpdateSql();
-            var result = sql.ExeSql(dbConn);
+            var result = sql.ExeSqlWithParams(dbConn);
             return Convert.ToInt32(result);
         }
 
-        public static T Find<T>(this IDbConnection dbConn,object id)
+        public static T Find<T>(this IDbConnection dbConn, object id)
         {
             var sql = default(T).SelectSql(id);
-            var data = sql.ExeQuery(dbConn);
+            var data = sql.ExeQueryWithParams(dbConn);
             var result = data.ToList<T>().FirstOrDefault();
             return result;
         }
@@ -58,20 +66,22 @@ namespace Orm.Son.Core
         public static List<T> FindMany<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func)
         {
             var sql = default(T).SelectSql(func);
-            var data = sql.ExeQuery(dbConn);
+            var data = sql.ExeQueryWithParams(dbConn);
             var result = data.ToList<T>();
             return result;
         }
 
-        public static object ExecuteSql(this IDbConnection dbConn,string sql)
+        public static object ExecuteSql(this IDbConnection dbConn, string sql, List<SqlParameter> param = null)
         {
-            var data = sql.ExeSql(dbConn);
+            var data = param == null ? sql.ExeSql(dbConn)
+                 : new Tuple<string, List<SqlParameter>>(sql, param).ExeSqlWithParams(dbConn);
             return data;
         }
 
-        public static List<T> ExecuteQuery<T>(this IDbConnection dbConn, string sql)
+        public static List<T> ExecuteQuery<T>(this IDbConnection dbConn, string sql, List<SqlParameter> param = null)
         {
-            var data = sql.ExeQuery(dbConn);
+            var data = param == null ? sql.ExeQuery(dbConn)
+                : new Tuple<string, List<SqlParameter>>(sql, param).ExeQueryWithParams(dbConn);
             var result = data.ToList<T>();
             return result;
         }

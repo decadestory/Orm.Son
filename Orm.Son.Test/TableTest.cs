@@ -12,12 +12,28 @@ namespace Orm.Son.Test
     public class TableTest
     {
         [TestMethod]
-        public void DataBase()
+        public void DataBaseCreate()
         {
             using (var db = new TestConnection())
             {
                 var isCreated = db.CreateTable<User>();
-                //var isDropped = db.DropTable<User>();
+                var isCreated2 = db.CreateTable<User>();
+                var obj = new User
+                {
+                    Name = "Jerry",
+                    Age = 15,
+                    Score = 99
+                };
+                var ss = db.Insert(obj);
+            }
+        }
+
+        [TestMethod]
+        public void DataBaseDrop()
+        {
+            using (var db = new TestConnection())
+            {
+                var isDropped = db.DropTable<User>();
             }
         }
     }

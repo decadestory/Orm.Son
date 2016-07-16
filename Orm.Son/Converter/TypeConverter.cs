@@ -33,7 +33,6 @@ namespace Orm.Son.Converter
             if (type == typeof(Guid) | type == typeof(Guid?))
                 return "uniqueidentifier";
 
-
             throw new Exception("类型不支持");
         }
     }
