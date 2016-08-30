@@ -56,7 +56,24 @@ namespace Orm.Son.Core
             var result = sqlDataAdapter.Fill(ds);
             return ds;
         }
-        
+
+        public static Tuple<DataSet,object> ExeSqlWithParamsPage(this Tuple<string, List<SqlParameter>,string> sql, IDbConnection dbConn)
+        {
+            var dbCommand = dbConn.CreateCommand();
+            sql.Item2.ForEach(t => dbCommand.Parameters.Add(t));
+
+            dbCommand.CommandText = sql.Item1;
+            var sqlDataAdapter = new SqlDataAdapter();
+            sqlDataAdapter.SelectCommand = (SqlCommand)dbCommand;
+            var ds = new DataSet();
+            var resultData = sqlDataAdapter.Fill(ds);
+
+            dbCommand.CommandText = sql.Item3;
+            var resultTotal = dbCommand.ExecuteScalar();
+
+            return new Tuple<DataSet, object>(ds, resultTotal);
+        }
+
         #endregion
     }
 }

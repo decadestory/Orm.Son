@@ -1,16 +1,25 @@
 ﻿using Orm.Son.Global;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Orm.Son.Linq
 {
-    public class ExpressionResolve
+    internal class ExpressionResolve
     {
+        public static string ResolveSingle<T>(Expression<Func<T, object>> func)
+        {
+            var body = func.Body as dynamic;
+            var member = body.Operand as MemberExpression;
+            return member.Member.Name;
+        }
+
         public static Tuple<string, List<SqlParameter>> Resolve<T>(Expression<Func<T, bool>> func)
         {
             var condition = ResovleFunc(func.Body);
@@ -46,8 +55,14 @@ namespace Orm.Son.Linq
             var inner = express as BinaryExpression;
             if (inner == null) return new Tuple<string, SqlParameter>(string.Empty, null);
             var sl = (inner.Left as MemberExpression).Member.Name;
-            var sr = (inner.Right as ConstantExpression).Value;
-            var srt = (inner.Right as ConstantExpression).Type;
+
+            var constantExp = inner.Right as ConstantExpression;
+            var sr = constantExp == null
+                ? GetValueOfMemberExpression((MemberExpression)inner.Right)
+                : constantExp.Value;
+
+            var srt = inner.Right.Type;
+
             var op = OperatorConverter(inner.NodeType);
             return new Tuple<string, SqlParameter>(sl + op + "@" + sl, new SqlParameter("@" + sl, sr));
         }
@@ -56,10 +71,15 @@ namespace Orm.Son.Linq
         {
             var MethodCall = expression as MethodCallExpression;
             var MethodName = MethodCall.Method.Name;
+            var constantExp = MethodCall.Arguments[0] as ConstantExpression;
+
             if (MethodName == "Contains")
             {
-                object value = (MethodCall.Arguments[0] as ConstantExpression).Value;
                 var name = (MethodCall.Object as MemberExpression).Member.Name;
+                var value = constantExp == null
+                ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
+                : constantExp.Value;
+
                 var cd = string.Format("{0} like '%'+@{0}+'%'", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
@@ -67,20 +87,32 @@ namespace Orm.Son.Linq
             if (MethodName == "Equals")
             {
                 var name = (MethodCall.Object as MemberExpression).Member.Name;
-                object value = (MethodCall.Arguments[0] as ConstantExpression).Value;
-                Type valeType = (MethodCall.Arguments[0] as ConstantExpression).Type;
+                var value = constantExp == null
+                ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
+                : constantExp.Value;
                 var cd = string.Format("{0} = @{0}", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
 
             if (MethodName == "EndsWith")
             {
-                object value = (MethodCall.Arguments[0] as ConstantExpression).Value;
                 var name = (MethodCall.Object as MemberExpression).Member.Name;
+                var value = constantExp == null
+                ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
+                : constantExp.Value;
+
                 var cd = string.Format("{0} like '%'+@{0}", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
             return new Tuple<string, SqlParameter>(string.Empty, null);
+        }
+
+        private static object GetValueOfMemberExpression(MemberExpression member)
+        {
+            var objectMember = Expression.Convert(member, typeof(object));
+            var getterLambda = Expression.Lambda<Func<object>>(objectMember);
+            var getter = getterLambda.Compile();
+            return getter();
         }
 
         private static string OperatorConverter(ExpressionType expressiontype)
@@ -111,5 +143,6 @@ namespace Orm.Son.Linq
                     throw new Exception(string.Format("不支持{0}此种运算符查找！" + expressiontype));
             }
         }
+
     }
 }

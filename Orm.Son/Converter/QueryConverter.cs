@@ -110,6 +110,34 @@ namespace Orm.Son.Converter
             return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
         }
 
+        public static Tuple<string, List<SqlParameter>> TopSql<T>(this T entity, Expression<Func<T, bool>> func, Expression<Func<T, object>> order, bool isDesc = false)
+        {
+            var condition = ExpressionResolve.Resolve(func);
+            var orderName = ExpressionResolve.ResolveSingle(order);
+            var sortMode = isDesc ? "DESC" : "ASC";
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var sql = string.Format("SELECT TOP 1 * FROM {0} WITH(NOLOCK) WHERE {1} ORDER BY {2} {3};", tableName, condition.Item1, orderName, sortMode);
+            return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
+        }
+
+        public static Tuple<string, List<SqlParameter>,string> PageSql<T>(this T entity, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
+        {
+            var condition = ExpressionResolve.Resolve(where);
+            var orderName = ExpressionResolve.ResolveSingle(order);
+            var sortMode = isDesc ? "DESC" : "ASC";
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var sql = string.Format(@"WITH PAGERESULT AS (SELECT ROW_NUMBER() OVER(ORDER BY {0} {1}) AS NUMBER, * FROM {2} WHERE {3}) "
+                                    , orderName, sortMode, tableName, condition.Item1);
+            var sqlData = string.Format("{0} SELECT TOP {1} * FROM PAGERESULT WHERE NUMBER>{2} ;", sql, limit, (page - 1) * limit);
+            var sqlCnt = string.Format("{0} SELECT COUNT(1) FROM PAGERESULT ;", sql);
+
+            return new Tuple<string, List<SqlParameter>,string>(sqlData, condition.Item2,sqlCnt);
+        }
+
         public static string CreateSql<T>(this T entity)
         {
             var et = typeof(T);

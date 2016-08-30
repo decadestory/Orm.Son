@@ -63,12 +63,29 @@ namespace Orm.Son.Core
             return result;
         }
 
+        public static T Top<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order, bool isDesc = false)
+        {
+            var sql = default(T).TopSql(func, order, isDesc);
+            var data = sql.ExeQueryWithParams(dbConn);
+            var result = data.ToList<T>().FirstOrDefault();
+            return result;
+        }
+
         public static List<T> FindMany<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func)
         {
             var sql = default(T).SelectSql(func);
             var data = sql.ExeQueryWithParams(dbConn);
             var result = data.ToList<T>();
             return result;
+        }
+
+        public static Tuple<List<T>, int> FindPage<T>(this IDbConnection dbConn, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
+        {
+            var sqls = default(T).PageSql(where, order, page, limit, isDesc);
+            var result = sqls.ExeSqlWithParamsPage(dbConn);
+            var dataResult = result.Item1.ToList<T>();
+
+            return new Tuple<List<T>, int>(dataResult, Convert.ToInt32(result.Item2));
         }
 
         public static object ExecuteSql(this IDbConnection dbConn, string sql, List<SqlParameter> param = null)

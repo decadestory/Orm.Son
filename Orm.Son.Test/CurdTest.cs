@@ -32,14 +32,29 @@ namespace Orm.Son.Test
                     AddTime = DateTime.Now
                 };
 
+                var pages = db.FindPage<Demo>(t => t.Age == 21, t => t.Score, 2, 100);
+
+                var topResult = db.Top<Demo>(t => t.Age == 32, t => t.Score);
+                var topResult2 = db.Top<Demo>(t => t.Age == 32, t => t.Score, true);
+
+
                 var list = new List<Demo> { obj, obj2 };
 
                 var res = db.Insert(obj);
                 var res2 = db.Insert(list);
                 db.Delete<Demo>(1010082);
                 db.Delete<Demo>(t => t.Name == "JerryDemoMany1");
-
                 db.Update(obj);
+
+                var str = "Jerry60";
+                var str2 = "329";
+                var vr = db.FindMany<Demo>(t => t.Name == str);
+                var vr2 = db.FindMany<Demo>(t => t.Name.Contains(str2));
+
+                var val = 63;
+                var b2 = db.FindMany<Demo>(t => t.Age == val);
+
+
                 var s = db.Find<Demo>(1010000);
                 var data = db.FindMany<Demo>(t => t.Age < 50 && t.IsDel == false);
                 var data1 = db.FindMany<Demo>(t => t.Age.Equals(25));
@@ -56,6 +71,7 @@ namespace Orm.Son.Test
 
                 var data5 = db.ExecuteSql("INSERT INTO DEMO(Name,Age,Score,AddTime,IsDel) VALUES('JerryDemo',10,56,'2016/6/26 14:04:43','False');SELECT @@IDENTITY;");
                 var data6 = db.ExecuteSql(" SELECT count(1) FROM DEMO WHERE Age=25");
+
             }
         }
 
