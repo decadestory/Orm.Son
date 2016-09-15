@@ -12,7 +12,7 @@ namespace Orm.Son.Core
     {
         public string ConnectionString { get; set; }
         public int ConnectionTimeout { get; set; }
-        public string Database { get; }
+        public string Database { get; set; }
         public ConnectionState State { get; }
         public SqlConnection DbConnection { set; get; }
         public SqlTransaction DbTransaction { set; get; }

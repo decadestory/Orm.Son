@@ -50,6 +50,7 @@
     <Compile Include="Core\SqlExeHandler.cs" />
     <Compile Include="Global\TypeOperator.cs" />
     <Compile Include="Linq\ExpressionResolve.cs" />
+    <Compile Include="Mapper\KeyAttribute.cs" />
     <Compile Include="Mapper\TableNameAttribute.cs" />
     <Compile Include="Mapper\DescriptionAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

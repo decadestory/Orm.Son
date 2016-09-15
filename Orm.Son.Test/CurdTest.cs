@@ -121,5 +121,42 @@ namespace Orm.Son.Test
 
             }
         }
+
+        [TestMethod]
+        public void KeyCurd()
+        {
+            using (var db = new TestConnection())
+            {
+                var isCreated3 = db.CreateTable<Demo2>();
+                var demo = new Demo2
+                {
+                    Name = "KeyOpr1",
+                    Age = 10,
+                    Score = 56,
+                    AddTime = DateTime.Now
+                };
+
+                db.Insert(demo);
+                db.Insert(demo);
+                db.Insert(demo);
+
+                var res = db.Delete<Demo2>(1);
+
+                var demoEdit = new Demo2
+                {
+                    MyId=2,
+                    Name = "KeyOpr2",
+                    Age = 22,
+                    Score = 22,
+                    AddTime = DateTime.Now
+                };
+
+                var res1 = db.Update(demoEdit);
+
+
+
+            }
+
+        }
     }
 }

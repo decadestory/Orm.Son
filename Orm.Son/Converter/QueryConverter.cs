@@ -19,16 +19,17 @@ namespace Orm.Son.Converter
             var types = entity.GetType();
             var infos = types.GetProperties();
 
-
             var tableAttr = types.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : types.Name;
             var names = new List<string>();
             var values = new List<string>();
             var sqlParamsVal = new List<SqlParameter>();
+            var keyInfo = infos.FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "Id";
 
             foreach (var item in infos)
             {
-                if (item.Name.Equals("Id")) continue;
+                if (item.Name.Equals(keyStr)) continue;
                 var val = item.GetValue(entity, null);
                 if (item.PropertyType == typeof(DateTime) && (DateTime)val == default(DateTime)) continue;
                 names.Add(item.Name);
@@ -44,12 +45,14 @@ namespace Orm.Son.Converter
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var keyInfo = et.GetProperties().FirstOrDefault(t=>(t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ?keyInfo.Name: "ID";
 
             var sqlParamsVal = new List<SqlParameter> {
                 new SqlParameter("@Id",id)
             };
 
-            var sql = string.Format("DELETE {0} WHERE ID=@Id; SELECT @@ROWCOUNT;", tableName.ToUpper());
+            var sql = string.Format("DELETE {0} WHERE {1}=@Id; SELECT @@ROWCOUNT;", tableName.ToUpper(), keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
@@ -72,11 +75,13 @@ namespace Orm.Son.Converter
             var sqlParamsVal = new List<SqlParameter>();
             var sets = new List<string>();
             var id = string.Empty;
+            var keyInfo = infos.FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "Id";
 
             foreach (var item in infos)
             {
                 var val = item.GetValue(entity, null);
-                if (item.Name.Equals("Id"))
+                if (item.Name.Equals(keyStr))
                 {
                     sqlParamsVal.Add(new SqlParameter("@Id", val));
                     id = val.ToString();
@@ -86,7 +91,7 @@ namespace Orm.Son.Converter
                 sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
             }
 
-            var sql = string.Format("UPDATE {0} SET {1} WHERE ID=@Id;SELECT @@ROWCOUNT;", tableName, string.Join(",", sets));
+            var sql = string.Format("UPDATE {0} SET {1} WHERE {2}=@Id;SELECT @@ROWCOUNT;", tableName, string.Join(",", sets),keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
@@ -96,7 +101,11 @@ namespace Orm.Son.Converter
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
             var sqlParamsVal = new List<SqlParameter> { new SqlParameter("@Id", id) };
-            var sql = string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE ID=@Id;", tableName);
+            var keyInfo = et.GetProperties().FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "ID";
+
+
+            var sql = string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1}=@Id;", tableName,keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
@@ -149,9 +158,19 @@ namespace Orm.Son.Converter
             var descriptions = new StringBuilder();
 
             var sql = "CREATE TABLE [{0}] ({1});";
+            var pk = "CONSTRAINT [PK_{0}] PRIMARY KEY CLUSTERED([{1}] ASC)";
+            var isHasPrimary = false;
+
             foreach (var item in infos)
             {
-                var identity = item.Name == "Id" ? "IDENTITY(1,1)" : string.Empty;
+                var identity = string.Empty;
+                if (item.Name == "Id" || item.GetCustomAttributes(typeof(KeyAttribute), true).Any())
+                {
+                    identity = "IDENTITY(1,1)";
+                    pk = string.Format(pk,tableName,item.Name);
+                    isHasPrimary = true;
+                }
+
                 var nullable = TypeOperator.IsNullable(item.PropertyType) ? "NULL" : "NOT NULL";
                 var timeDefault = item.PropertyType == typeof(DateTime) ? "DEFAULT (GETDATE())" : string.Empty;
                 var sqlType = item.PropertyType.ToSqlType();
@@ -165,6 +184,7 @@ namespace Orm.Son.Converter
                     descriptions.AppendLine(string.Format(@"EXEC sp_addextendedproperty @name=N'MS_Description',@value=N'{0}',@level0type=N'Schema',@level0name=N'dbo',@level1type=N'Table',@level1name=N'{1}',@level2type=N'Column',@level2name=N'{2}';", attrName, tableName, item.Name));
                 }
             }
+            if(isHasPrimary) cols.Add(pk);
             var result = string.Format(sql + "{2}", tableName, string.Join(",", cols), descriptions);
             return result;
         }

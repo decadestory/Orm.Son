@@ -55,6 +55,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Connections\TestConnection.cs" />
+    <Compile Include="Entities\Demo2.cs" />
     <Compile Include="Entities\Demo.cs" />
     <Compile Include="Entities\Product.cs" />
     <Compile Include="Entities\User.cs" />

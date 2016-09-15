@@ -18,6 +18,7 @@ namespace Orm.Son.Test
             {
                 var isCreated = db.CreateTable<User>();
                 var isCreated2 = db.CreateTable<User>();
+                var isCreated3 = db.CreateTable<Demo2>();
                 var obj = new User
                 {
                     Name = "Jerry",
