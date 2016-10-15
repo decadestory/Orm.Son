@@ -33,10 +33,10 @@ namespace Orm.Son.Linq
             if (express.NodeType == ExpressionType.Call)
             {
                 var res = ResovleLinq(express);
-                return new Tuple<string, List<SqlParameter>>(res.Item1,new List<SqlParameter> { res.Item2});
+                return new Tuple<string, List<SqlParameter>>(res.Item1, new List<SqlParameter> { res.Item2 });
             }
 
-            if (inner.Left.NodeType == ExpressionType.MemberAccess)
+            if (inner.Left.NodeType == ExpressionType.MemberAccess || inner.Left.NodeType == ExpressionType.Convert)
             {
                 var res = ResovleFuncRight(express);
                 return new Tuple<string, List<SqlParameter>>(res.Item1, new List<SqlParameter> { res.Item2 });
@@ -54,13 +54,9 @@ namespace Orm.Son.Linq
         {
             var inner = express as BinaryExpression;
             if (inner == null) return new Tuple<string, SqlParameter>(string.Empty, null);
-            var sl = (inner.Left as MemberExpression).Member.Name;
 
-            var constantExp = inner.Right as ConstantExpression;
-            var sr = constantExp == null
-                ? GetValueOfMemberExpression((MemberExpression)inner.Right)
-                : constantExp.Value;
-
+            var sl = GetMemberName(inner.Left);
+            var sr = GetMemberValue(inner.Right);
             var srt = inner.Right.Type;
 
             var op = OperatorConverter(inner.NodeType);
@@ -144,5 +140,32 @@ namespace Orm.Son.Linq
             }
         }
 
+        private static string GetMemberName(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    return (expression as MemberExpression).Member.Name;
+                case ExpressionType.Convert:
+                    return GetMemberName(((UnaryExpression)expression).Operand);
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static object GetMemberValue(Expression expression)
+        {
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    return (expression as ConstantExpression).Value;
+                case ExpressionType.MemberAccess:
+                    return GetValueOfMemberExpression((MemberExpression)expression);
+                case ExpressionType.Convert:
+                    return GetMemberValue((expression as UnaryExpression).Operand);
+                default:
+                    return null;
+            }
+        }
     }
 }

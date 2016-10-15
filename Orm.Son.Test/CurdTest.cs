@@ -72,6 +72,7 @@ namespace Orm.Son.Test
                 var data5 = db.ExecuteSql("INSERT INTO DEMO(Name,Age,Score,AddTime,IsDel) VALUES('JerryDemo',10,56,'2016/6/26 14:04:43','False');SELECT @@IDENTITY;");
                 var data6 = db.ExecuteSql(" SELECT count(1) FROM DEMO WHERE Age=25");
 
+                Assert.IsTrue(true);
             }
         }
 

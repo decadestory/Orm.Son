@@ -63,7 +63,7 @@ namespace Orm.Son.Core
             return result;
         }
 
-        public static T Top<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order, bool isDesc = false)
+        public static T Top<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
         {
             var sql = default(T).TopSql(func, order, isDesc);
             var data = sql.ExeQueryWithParams(dbConn);
