@@ -32,6 +32,8 @@ namespace Orm.Son.Test
                     AddTime = DateTime.Now
                 };
 
+                var f1 = db.Find<Demo, Demo2>(23);
+
                 var pages = db.FindPage<Demo>(t => t.Age == 21, t => t.Score, 2, 100);
 
                 var topResult = db.Top<Demo>(t => t.Age == 32, t => t.Score);

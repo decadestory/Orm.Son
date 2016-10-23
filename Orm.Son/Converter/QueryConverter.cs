@@ -109,13 +109,18 @@ namespace Orm.Son.Converter
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
-        public static Tuple<string, List<SqlParameter>> SelectSql<T>(this T entity, Expression<Func<T, bool>> func)
+        public static Tuple<string, List<SqlParameter>> SelectSql<T>(this T entity, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
         {
             var condition = ExpressionResolve.Resolve(func);
+            var orderName = order == null ? "" : ExpressionResolve.ResolveSingle(order);
+            var sortMode = isDesc ? "DESC" : "ASC";
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            var sql = string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1};", tableName, condition.Item1);
+
+            var sql = order == null
+               ? string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1} ;", tableName, condition.Item1)
+               : string.Format("SELECT * FROM {0} WITH(NOLOCK) WHERE {1} ORDER BY {2} {3};", tableName, condition.Item1, orderName, sortMode);
             return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
         }
 
