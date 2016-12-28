@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Orm.Son.Test.Connections
 {
-    public class TestConnection:SonConnection
+    public class TestConnection : SonConnection
     {
-        public TestConnection():base("conn")
+        public TestConnection() : base("conn")
         {
         }
     }

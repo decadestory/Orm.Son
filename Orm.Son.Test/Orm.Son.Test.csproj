@@ -57,6 +57,7 @@
     <Compile Include="Connections\TestConnection.cs" />
     <Compile Include="Entities\Demo2.cs" />
     <Compile Include="Entities\Demo.cs" />
+    <Compile Include="Entities\Demo3.cs" />
     <Compile Include="Entities\Product.cs" />
     <Compile Include="Entities\User.cs" />
     <Compile Include="TableTest.cs" />
