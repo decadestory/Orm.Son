@@ -22,15 +22,16 @@ namespace Orm.Son.Test
         [TestMethod]
         public void EntityMapTest()
         {
-            var obj = new Demo
+            var obj = new Demo4
             {
                 Name = "JerryDemoMany1",
                 Age = 10,
                 Score = 56,
-                AddTime = DateTime.Now
+                AddTime = DateTime.Now,
+                IsDel=2
             };
 
-            var res = EntityMapper.Mapper<Demo, Demo3>(obj);
+            var res = EntityMapper.Mapper<Demo4, Demo3>(obj);
 
             Assert.IsNotNull(res);
 

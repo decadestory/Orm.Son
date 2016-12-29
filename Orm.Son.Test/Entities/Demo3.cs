@@ -13,6 +13,18 @@ namespace Orm.Son.Test.Entities
         public string Age { get; set; }
         public int Score { get; set; }
         public string AddTime { get; set; }
-        public int IsDel { get; set; }
+        public int? IsDel { get; set; }
+    }
+
+    public class Demo4
+    {
+        public int Id2 { get; set; }
+        public string Name { get; set; }
+        public int? Age { get; set; }
+        public int? Score { get; set; }
+        public DateTime? AddTime { get; set; }
+        public int? IsDel { get; set; }
+        public bool? IsDel2 { get; set; }
+        public int? IsDel3 { get; set; }
     }
 }

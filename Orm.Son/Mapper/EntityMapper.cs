@@ -18,11 +18,20 @@ namespace Orm.Son.Mapper
                 var vIn = obj.GetValue(inObj);
                 var pOut = OutType.GetProperty(obj.Name);
                 if (pOut == null) continue;
-                var vOut = Convert.ChangeType(vIn, pOut.PropertyType);
-                pOut.SetValue(outObj, vOut);
+                if (vIn == null) continue;
+
+                var nuPout = Nullable.GetUnderlyingType(pOut.PropertyType);
+                try
+                {
+                    var vOut = Convert.ChangeType(vIn, nuPout ?? pOut.PropertyType);
+                    pOut.SetValue(outObj, vOut);
+                }
+                catch
+                {
+                    continue;
+                }
             }
             return outObj;
         }
-
     }
 }
