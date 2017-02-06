@@ -32,6 +32,7 @@ namespace Orm.Son.Converter
                 if (item.Name.Equals(keyStr)) continue;
                 var val = item.GetValue(entity, null);
                 if (item.PropertyType == typeof(DateTime) && (DateTime)val == default(DateTime)) continue;
+                if (val == null) continue;
                 names.Add(item.Name);
                 sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
                 values.Add("@" + item.Name);
