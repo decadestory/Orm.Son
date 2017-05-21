@@ -14,6 +14,6 @@ namespace Orm.Son.Test.Entities
         public int Score { get; set; }
         public DateTime AddTime { get; set; }
         public bool IsDel { get; set; }
-        public int? Nullables { get; set; }
+        //public int? Nullables { get; set; }
     }
 }

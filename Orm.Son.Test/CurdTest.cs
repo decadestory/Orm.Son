@@ -60,7 +60,7 @@ namespace Orm.Son.Test
 
 
                 var s = db.Find<Demo>(1010000);
-                var data = db.FindMany<Demo>(t => t.Age < 50 && t.IsDel == false);
+                var data = db.FindMany<Demo>(t => t.Age < 50 && t.IsDel == false,o=>o.AddTime,true);
                 var data1 = db.FindMany<Demo>(t => t.Age.Equals(25));
                 var data2 = db.FindMany<Demo>(t => t.Name.EndsWith("erry56471"));
                 var data22 = db.FindMany<Demo>(t => t.Name.Contains("erry5"));
@@ -101,7 +101,7 @@ namespace Orm.Son.Test
                     db.ExecuteSql("UPDATE DEMO SET Name='JerryDemo',Age=10,Score=56s,AddTime='2016/6/26 12:41:09',IsDel='True' WHERE ID = 1010000; SELECT @@ROWCOUNT;");
                     tran.Commit();
                 }
-                catch (Exception ex)
+                catch
                 {
                     tran.Rollback();
                 }

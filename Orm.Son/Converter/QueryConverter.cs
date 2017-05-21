@@ -31,10 +31,13 @@ namespace Orm.Son.Converter
             {
                 if (item.Name.Equals(keyStr)) continue;
                 var val = item.GetValue(entity, null);
+                var dbType = TypeConverter.ToDbType(item.PropertyType);
+                var isNullable = item.PropertyType.IsGenericType && item.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+
                 if (item.PropertyType == typeof(DateTime) && (DateTime)val == default(DateTime)) continue;
                 if (val == null) continue;
-                names.Add(item.Name);
-                sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
+                names.Add("[" + item.Name + "]");
+                sqlParamsVal.Add(new SqlParameter("@" + item.Name, dbType) { SqlValue = val });
                 values.Add("@" + item.Name);
             }
             var sql = string.Format("INSERT INTO [{0}]({1}) VALUES({2});SELECT @@IDENTITY;", tableName, string.Join(",", names), string.Join(",", values));
@@ -46,8 +49,8 @@ namespace Orm.Son.Converter
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            var keyInfo = et.GetProperties().FirstOrDefault(t=>(t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
-            var keyStr = keyInfo != null ?keyInfo.Name: "ID";
+            var keyInfo = et.GetProperties().FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "ID";
 
             var sqlParamsVal = new List<SqlParameter> {
                 new SqlParameter("@Id",id)
@@ -82,17 +85,20 @@ namespace Orm.Son.Converter
             foreach (var item in infos)
             {
                 var val = item.GetValue(entity, null);
+                var dbType = TypeConverter.ToDbType(item.PropertyType);
+                var isNullable = item.PropertyType.IsGenericType && item.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+
                 if (item.Name.Equals(keyStr))
                 {
-                    sqlParamsVal.Add(new SqlParameter("@Id", val));
+                    sqlParamsVal.Add(new SqlParameter("@Id", dbType) { SqlValue = val });
                     id = val.ToString();
                     continue;
                 }
-                sets.Add(item.Name + "=@" + item.Name);
-                sqlParamsVal.Add(new SqlParameter("@" + item.Name, val));
+                sets.Add("[" + item.Name + "]" + "=@" + item.Name);
+                sqlParamsVal.Add(new SqlParameter("@" + item.Name, dbType) { SqlValue = val == null ? DBNull.Value : val, IsNullable = isNullable });
             }
 
-            var sql = string.Format("UPDATE [{0}] SET {1} WHERE {2}=@Id;SELECT @@ROWCOUNT;", tableName, string.Join(",", sets),keyStr);
+            var sql = string.Format("UPDATE [{0}] SET {1} WHERE [{2}]=@Id;SELECT @@ROWCOUNT;", tableName, string.Join(",", sets), keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
@@ -106,7 +112,7 @@ namespace Orm.Son.Converter
             var keyStr = keyInfo != null ? keyInfo.Name : "ID";
 
 
-            var sql = string.Format("SELECT * FROM [{0}] WITH(NOLOCK) WHERE {1}=@Id;", tableName,keyStr);
+            var sql = string.Format("SELECT * FROM [{0}] WITH(NOLOCK) WHERE [{1}]=@Id;", tableName, keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
         }
 
@@ -135,11 +141,11 @@ namespace Orm.Son.Converter
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
             var sql = order == null
                 ? string.Format("SELECT TOP 1 * FROM [{0}] WITH(NOLOCK) WHERE {1} ;", tableName, condition.Item1)
-                : string.Format("SELECT TOP 1 * FROM [{0}] WITH(NOLOCK) WHERE {1} ORDER BY {2} {3};", tableName, condition.Item1, orderName, sortMode);
+                : string.Format("SELECT TOP 1 * FROM [{0}] WITH(NOLOCK) WHERE {1} ORDER BY [{2}] {3};", tableName, condition.Item1, orderName, sortMode);
             return new Tuple<string, List<SqlParameter>>(sql, condition.Item2);
         }
 
-        public static Tuple<string, List<SqlParameter>,string> PageSql<T>(this T entity, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
+        public static Tuple<string, List<SqlParameter>, string> PageSql<T>(this T entity, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
         {
             var condition = ExpressionResolve.Resolve(where);
             var orderName = ExpressionResolve.ResolveSingle(order);
@@ -147,12 +153,12 @@ namespace Orm.Son.Converter
             var et = typeof(T);
             var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
             var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
-            var sql = string.Format(@"WITH PAGERESULT AS (SELECT ROW_NUMBER() OVER(ORDER BY {0} {1}) AS NUMBER, * FROM [{2}] WHERE {3}) "
+            var sql = string.Format(@"WITH PAGERESULT AS (SELECT ROW_NUMBER() OVER(ORDER BY [{0}] {1}) AS NUMBER, * FROM [{2}] WHERE {3}) "
                                     , orderName, sortMode, tableName, condition.Item1);
             var sqlData = string.Format("{0} SELECT TOP {1} * FROM PAGERESULT WHERE NUMBER>{2} ;", sql, limit, (page - 1) * limit);
             var sqlCnt = string.Format("{0} SELECT COUNT(1) FROM PAGERESULT ;", sql);
 
-            return new Tuple<string, List<SqlParameter>,string>(sqlData, condition.Item2,sqlCnt);
+            return new Tuple<string, List<SqlParameter>, string>(sqlData, condition.Item2, sqlCnt);
         }
 
         public static string CreateSql<T>(this T entity)
@@ -175,7 +181,7 @@ namespace Orm.Son.Converter
                 if (item.Name == "Id" || item.GetCustomAttributes(typeof(KeyAttribute), true).Any())
                 {
                     identity = "IDENTITY(1,1)";
-                    pk = string.Format(pk,tableName,item.Name);
+                    pk = string.Format(pk, tableName, item.Name);
                     isHasPrimary = true;
                 }
 
@@ -192,7 +198,7 @@ namespace Orm.Son.Converter
                     descriptions.AppendLine(string.Format(@"EXEC sp_addextendedproperty @name=N'MS_Description',@value=N'{0}',@level0type=N'Schema',@level0name=N'dbo',@level1type=N'Table',@level1name=N'{1}',@level2type=N'Column',@level2name=N'{2}';", attrName, tableName, item.Name));
                 }
             }
-            if(isHasPrimary) cols.Add(pk);
+            if (isHasPrimary) cols.Add(pk);
             var result = string.Format(sql + "{2}", tableName, string.Join(",", cols), descriptions);
             return result;
         }

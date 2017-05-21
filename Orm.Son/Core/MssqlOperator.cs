@@ -79,7 +79,7 @@ namespace Orm.Son.Core
             return result;
         }
 
-        public static T2 Top<T,T2>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
+        public static T2 Top<T, T2>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
         {
             var sql = default(T).TopSql(func, order, isDesc);
             var data = sql.ExeQueryWithParams(dbConn);
@@ -95,7 +95,7 @@ namespace Orm.Son.Core
             return result;
         }
 
-        public static List<T2> FindMany<T,T2>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
+        public static List<T2> FindMany<T, T2>(this IDbConnection dbConn, Expression<Func<T, bool>> func, Expression<Func<T, object>> order = null, bool isDesc = false)
         {
             var sql = default(T).SelectSql(func, order, isDesc);
             var data = sql.ExeQueryWithParams(dbConn);
@@ -112,7 +112,7 @@ namespace Orm.Son.Core
             return new Tuple<List<T>, int>(dataResult, Convert.ToInt32(result.Item2));
         }
 
-        public static Tuple<List<T2>, int> FindPage<T,T2>(this IDbConnection dbConn, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
+        public static Tuple<List<T2>, int> FindPage<T, T2>(this IDbConnection dbConn, Expression<Func<T, bool>> where, Expression<Func<T, object>> order, int page, int limit, bool isDesc = false)
         {
             var sqls = default(T).PageSql(where, order, page, limit, isDesc);
             var result = sqls.ExeSqlWithParamsPage(dbConn);

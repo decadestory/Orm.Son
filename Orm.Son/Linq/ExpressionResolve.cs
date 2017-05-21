@@ -1,4 +1,5 @@
-﻿using Orm.Son.Global;
+﻿using Orm.Son.Converter;
+using Orm.Son.Global;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -44,7 +45,7 @@ namespace Orm.Son.Linq
 
             var cur = ResovleFunc(inner.Left);
             var resovled = inner.Right.NodeType == ExpressionType.Call ? ResovleLinq(inner.Right) : ResovleFuncRight(inner.Right);
-            var opr = OperatorConverter(inner.NodeType);
+            var opr = TypeConverter.OperatorConverter(inner.NodeType);
             var reslist = cur.Item2;
             reslist.Add(resovled.Item2);
             return new Tuple<string, List<SqlParameter>>(cur.Item1 + " " + opr + " " + resovled.Item1, reslist);
@@ -59,8 +60,8 @@ namespace Orm.Son.Linq
             var sr = GetMemberValue(inner.Right);
             var srt = inner.Right.Type;
 
-            var op = OperatorConverter(inner.NodeType);
-            return new Tuple<string, SqlParameter>(sl + op + "@" + sl, new SqlParameter("@" + sl, sr));
+            var op = TypeConverter.OperatorConverter(inner.NodeType);
+            return new Tuple<string, SqlParameter>("[" +sl + "] " + op + "@" + sl, new SqlParameter("@" + sl, sr));
         }
 
         public static Tuple<string, SqlParameter> ResovleLinq(Expression expression)
@@ -76,7 +77,7 @@ namespace Orm.Son.Linq
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
 
-                var cd = string.Format("{0} like '%'+@{0}+'%'", name);
+                var cd = string.Format("[{0}] like '%'+@{0}+'%'", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
 
@@ -86,7 +87,7 @@ namespace Orm.Son.Linq
                 var value = constantExp == null
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
-                var cd = string.Format("{0} = @{0}", name);
+                var cd = string.Format("[{0}] = @{0}", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
 
@@ -97,7 +98,7 @@ namespace Orm.Son.Linq
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
 
-                var cd = string.Format("{0} like '%'+@{0}", name);
+                var cd = string.Format("[{0}] like '%'+@{0}", name);
                 return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
             }
             return new Tuple<string, SqlParameter>(string.Empty, null);
@@ -111,34 +112,7 @@ namespace Orm.Son.Linq
             return getter();
         }
 
-        private static string OperatorConverter(ExpressionType expressiontype)
-        {
-            switch (expressiontype)
-            {
-                case ExpressionType.And:
-                    return "and";
-                case ExpressionType.AndAlso:
-                    return "and";
-                case ExpressionType.Or:
-                    return "or";
-                case ExpressionType.OrElse:
-                    return "or";
-                case ExpressionType.Equal:
-                    return "=";
-                case ExpressionType.LessThan:
-                    return "<";
-                case ExpressionType.GreaterThan:
-                    return ">";
-                case ExpressionType.LessThanOrEqual:
-                    return "<=";
-                case ExpressionType.GreaterThanOrEqual:
-                    return ">=";
-                case ExpressionType.NotEqual:
-                    return "<>";
-                default:
-                    throw new Exception(string.Format("不支持{0}此种运算符查找！" + expressiontype));
-            }
-        }
+
 
         private static string GetMemberName(Expression expression)
         {
