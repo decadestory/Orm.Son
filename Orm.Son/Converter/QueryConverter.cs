@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Orm.Son.Converter
@@ -56,8 +57,48 @@ namespace Orm.Son.Converter
                 new SqlParameter("@Id",id)
             };
 
-            var sql = string.Format("DELETE [{0}] WHERE {1}=@Id; SELECT @@ROWCOUNT;", tableName.ToUpper(), keyStr);
+            var sql = string.Format("DELETE [{0}] WHERE [{1}]=@Id; SELECT @@ROWCOUNT;", tableName.ToUpper(), keyStr);
             return new Tuple<string, List<SqlParameter>>(sql, sqlParamsVal);
+        }
+
+        public static string DeleteSql<T>(this T entity, List<string> ids)
+        {
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var keyInfo = et.GetProperties().FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "ID";
+
+            var newIds =new  List<string>();
+            foreach (var id in ids)
+            {
+                var reg = new Regex(@"^[-A-Za-z0-9]+$") ;
+                if (reg.IsMatch(id + "")) newIds.Add(id + "");
+            }
+
+            var idstr ="'" + string.Join("','", newIds) +"'";
+            var sql = string.Format("DELETE [{0}] WHERE [{1}] in ({2}); SELECT @@ROWCOUNT;", tableName.ToUpper(), keyStr, idstr);
+            return sql;
+        }
+
+        public static string DeleteSql<T>(this T entity, List<int> ids)
+        {
+            var et = typeof(T);
+            var tableAttr = et.GetCustomAttributes(typeof(TableNameAttribute), true);
+            var tableName = tableAttr.Any() ? (tableAttr[0] as TableNameAttribute).Name : et.Name;
+            var keyInfo = et.GetProperties().FirstOrDefault(t => (t.GetCustomAttributes(typeof(KeyAttribute)).Any()));
+            var keyStr = keyInfo != null ? keyInfo.Name : "ID";
+
+            var newIds = new List<string>();
+            foreach (var id in ids)
+            {
+                var reg = new Regex(@"^[-A-Za-z0-9]+$");
+                if (reg.IsMatch(id + "")) newIds.Add(id + "");
+            }
+
+            var idstr = "'" + string.Join("','", newIds) + "'";
+            var sql = string.Format("DELETE [{0}] WHERE [{1}] in ({2}); SELECT @@ROWCOUNT;", tableName.ToUpper(), keyStr, idstr);
+            return sql;
         }
 
         public static Tuple<string, List<SqlParameter>> DeleteSql<T>(this T entity, Expression<Func<T, bool>> func)

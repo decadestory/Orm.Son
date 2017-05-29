@@ -47,6 +47,8 @@ namespace Orm.Son.Test
                 var res = db.Insert(obj);
                 var res2 = db.Insert(list);
                 db.Delete<Demo>(1010082);
+                db.Delete<Demo>(new List<int>{ 14,15 });
+                db.Delete<Demo>(new List<string>{ "14","15" });
                 db.Delete<Demo>(t => t.Name == "JerryDemoMany1");
                 db.Update(obj);
 

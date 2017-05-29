@@ -41,6 +41,20 @@ namespace Orm.Son.Core
             return Convert.ToInt32(result);
         }
 
+        public static int Delete<T>(this IDbConnection dbConn, List<int> ids)
+        {
+            var sql = default(T).DeleteSql(ids);
+            var result = sql.ExeSql(dbConn);
+            return Convert.ToInt32(result);
+        }
+
+        public static int Delete<T>(this IDbConnection dbConn, List<string> ids)
+        {
+            var sql = default(T).DeleteSql(ids);
+            var result = sql.ExeSql(dbConn);
+            return Convert.ToInt32(result);
+        }
+
         public static int Delete<T>(this IDbConnection dbConn, Expression<Func<T, bool>> func)
         {
             var sql = default(T).DeleteSql(func);
