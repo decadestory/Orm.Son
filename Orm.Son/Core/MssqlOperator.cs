@@ -9,6 +9,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Orm.Son.Core
 {
@@ -148,6 +149,33 @@ namespace Orm.Son.Core
                 : new Tuple<string, List<SqlParameter>>(sql, param).ExeQueryWithParams(dbConn);
             var result = data.ToList<T>();
             return result;
+        }
+
+        public static DataSet ExecuteQuery(this IDbConnection dbConn, string sql)
+        {
+            return sql.ExeQuery(dbConn);
+        }
+
+        public static void ExportCsv(this IDbConnection dbConn, string sql, string fileName)
+        {
+            var table = sql.ExeQuery(dbConn).Tables[0];
+            HttpContext.Current.Response.ContentType = "text/csv";
+            HttpContext.Current.Response.AddHeader("content-disposition", string.Format("attachment;  filename={0}.csv", HttpUtility.UrlEncode(fileName, Encoding.UTF8)));
+            HttpContext.Current.Response.ContentEncoding = Encoding.Default;
+
+            foreach (DataColumn column in table.Columns)
+                HttpContext.Current.Response.Write(column.ColumnName + ",");
+
+            HttpContext.Current.Response.Write(Environment.NewLine);
+
+            foreach (DataRow row in table.Rows)
+            {
+                for (int i = 0; i < table.Columns.Count; i++)
+                    HttpContext.Current.Response.Write(row[i].ToString().Replace(",", "") + ",");
+                HttpContext.Current.Response.Write(Environment.NewLine);
+            }
+
+            HttpContext.Current.Response.End();
         }
 
         public static bool CreateTable<T>(this IDbConnection dbConn)
