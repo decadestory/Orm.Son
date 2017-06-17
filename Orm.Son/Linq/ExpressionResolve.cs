@@ -14,45 +14,50 @@ namespace Orm.Son.Linq
 {
     internal class ExpressionResolve
     {
+        static volatile int index = 1;
+
         public static string ResolveSingle<T>(Expression<Func<T, object>> func)
         {
             var body = func.Body as dynamic;
-            var member = body.Operand as MemberExpression;
-            return member.Member.Name;
+            return GetMemberName(body);
         }
 
         public static Tuple<string, List<SqlParameter>> Resolve<T>(Expression<Func<T, bool>> func)
         {
+            index = 0;
             var condition = ResovleFunc(func.Body);
             return condition;
         }
 
         private static Tuple<string, List<SqlParameter>> ResovleFunc(Expression express)
         {
-            var inner = express as BinaryExpression;
-
             if (express.NodeType == ExpressionType.Call)
             {
                 var res = ResovleLinq(express);
                 return new Tuple<string, List<SqlParameter>>(res.Item1, new List<SqlParameter> { res.Item2 });
             }
 
+            var inner = express as BinaryExpression;
             if (inner.Left.NodeType == ExpressionType.MemberAccess || inner.Left.NodeType == ExpressionType.Convert)
             {
                 var res = ResovleFuncRight(express);
                 return new Tuple<string, List<SqlParameter>>(res.Item1, new List<SqlParameter> { res.Item2 });
             }
 
-            var cur = ResovleFunc(inner.Left);
-            var resovled = inner.Right.NodeType == ExpressionType.Call ? ResovleLinq(inner.Right) : ResovleFuncRight(inner.Right);
+            var curLeft = ResovleFunc(inner.Left);
+            var curRight = ResovleFunc(inner.Right);
+
             var opr = TypeConverter.OperatorConverter(inner.NodeType);
-            var reslist = cur.Item2;
-            reslist.Add(resovled.Item2);
-            return new Tuple<string, List<SqlParameter>>(cur.Item1 + " " + opr + " " + resovled.Item1, reslist);
+            curLeft.Item2.AddRange(curRight.Item2);
+
+            return inner.NodeType == ExpressionType.AndAlso || inner.NodeType == ExpressionType.OrElse
+                ? new Tuple<string, List<SqlParameter>>("(" + curLeft.Item1 + ")" + " " + opr + " " + "(" + curRight.Item1 + ")", curLeft.Item2)
+                : new Tuple<string, List<SqlParameter>>(curLeft.Item1 + " " + opr + " " + curRight.Item1, curLeft.Item2);
         }
 
         private static Tuple<string, SqlParameter> ResovleFuncRight(Expression express)
         {
+            index++;
             var inner = express as BinaryExpression;
             if (inner == null) return new Tuple<string, SqlParameter>(string.Empty, null);
 
@@ -60,12 +65,15 @@ namespace Orm.Son.Linq
             var sr = GetMemberValue(inner.Right);
             var srt = inner.Right.Type;
 
+            var dbType = TypeConverter.ToDbType(srt);
+            var par = new SqlParameter("@" + sl+index, dbType) { SqlValue = sr };
             var op = TypeConverter.OperatorConverter(inner.NodeType);
-            return new Tuple<string, SqlParameter>("[" +sl + "] " + op + "@" + sl, new SqlParameter("@" + sl, sr));
+            return new Tuple<string, SqlParameter>("[" + sl + "] " + op + "@" + sl+index, par);
         }
 
         public static Tuple<string, SqlParameter> ResovleLinq(Expression expression)
         {
+            index++;
             var MethodCall = expression as MethodCallExpression;
             var MethodName = MethodCall.Method.Name;
             var constantExp = MethodCall.Arguments[0] as ConstantExpression;
@@ -77,8 +85,8 @@ namespace Orm.Son.Linq
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
 
-                var cd = string.Format("[{0}] like '%'+@{0}+'%'", name);
-                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
+                var cd = string.Format("[{0}] like '%'+@{1}+'%'", name,name+index);
+                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name + index, value));
             }
 
             if (MethodName == "Equals")
@@ -87,8 +95,8 @@ namespace Orm.Son.Linq
                 var value = constantExp == null
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
-                var cd = string.Format("[{0}] = @{0}", name);
-                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
+                var cd = string.Format("[{0}] = @{1}", name,name + index);
+                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name + index, value));
             }
 
             if (MethodName == "EndsWith")
@@ -98,8 +106,8 @@ namespace Orm.Son.Linq
                 ? GetValueOfMemberExpression((MemberExpression)MethodCall.Arguments[0])
                 : constantExp.Value;
 
-                var cd = string.Format("[{0}] like '%'+@{0}", name);
-                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name, value));
+                var cd = string.Format("[{0}] like '%'+@{1}", name,name + index);
+                return new Tuple<string, SqlParameter>(cd, new SqlParameter("@" + name + index, value));
             }
             return new Tuple<string, SqlParameter>(string.Empty, null);
         }
@@ -111,8 +119,6 @@ namespace Orm.Son.Linq
             var getter = getterLambda.Compile();
             return getter();
         }
-
-
 
         private static string GetMemberName(Expression expression)
         {

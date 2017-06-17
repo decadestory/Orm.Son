@@ -60,7 +60,7 @@ namespace Orm.Son.Test
                 var val = 63;
                 var b2 = db.FindMany<Demo>(t => t.Age == val);
 
-
+                var data11 = db.FindMany<Demo>(t => t.Id > 100 && (t.Name.Contains("jerry194") || t.Name.Contains("jerry263")), o => o.AddTime);
                 var s = db.Find<Demo>(1010000);
                 var data = db.FindMany<Demo>(t => t.Age < 50 && t.IsDel == false,o=>o.AddTime,true);
                 var data1 = db.FindMany<Demo>(t => t.Age.Equals(25));

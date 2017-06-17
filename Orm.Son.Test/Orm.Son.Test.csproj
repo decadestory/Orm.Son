@@ -64,6 +64,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CurdTest.cs" />
     <Compile Include="MapperTest.cs" />
+    <Compile Include="lambdaTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Orm.Son\Orm.Son.csproj">
