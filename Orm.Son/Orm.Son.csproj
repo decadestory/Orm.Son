@@ -48,6 +48,7 @@
     <Compile Include="Core\MssqlOperator.cs" />
     <Compile Include="Converter\QueryConverter.cs" />
     <Compile Include="Core\SonConnection.cs" />
+    <Compile Include="Core\SonFact.cs" />
     <Compile Include="Core\SqlExeHandler.cs" />
     <Compile Include="Global\TypeOperator.cs" />
     <Compile Include="Linq\ExpressionResolve.cs" />

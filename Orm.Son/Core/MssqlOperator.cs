@@ -15,11 +15,11 @@ namespace Orm.Son.Core
 {
     public static class MssqlOperator
     {
-        public static int Insert<T>(this IDbConnection dbConn, T column)
+        public static long Insert<T>(this IDbConnection dbConn, T column)
         {
             var sql = column.InsertSql();
             var result = sql.ExeSqlWithParams(dbConn);
-            return Convert.ToInt32(result);
+            return Convert.ToInt64(result);
         }
 
         public static bool Insert<T>(this IDbConnection dbConn, List<T> columns)
