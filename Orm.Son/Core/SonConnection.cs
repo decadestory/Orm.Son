@@ -21,7 +21,7 @@ namespace Orm.Son.Core
             ConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings[connectionString].ConnectionString;
             DbConnection = new SqlConnection(ConnectionString);
             Database = DbConnection.Database;
-            DbConnection.Open();
+            //DbConnection.Open();
         }
 
         public IDbTransaction BeginTransaction()

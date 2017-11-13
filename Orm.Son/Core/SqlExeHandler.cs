@@ -14,10 +14,19 @@ namespace Orm.Son.Core
 
         public static object ExeSql(this string sql, IDbConnection dbConn)
         {
-            var dbCommand = dbConn.CreateCommand();
-            dbCommand.CommandText = sql;
-            var result = dbCommand.ExecuteScalar();
-            return result;
+            try
+            {
+                dbConn.Open();
+                var dbCommand = dbConn.CreateCommand();
+                dbCommand.CommandText = sql;
+                var result = dbCommand.ExecuteScalar();
+                return result;
+            }
+            finally
+            {
+                dbConn.Close();
+            }
+
         }
 
         public static DataSet ExeQuery(this string sql, IDbConnection dbConn)
@@ -28,7 +37,7 @@ namespace Orm.Son.Core
             var ds = new DataSet();
             var sqlDataAdapter = new SqlDataAdapter();
             sqlDataAdapter.SelectCommand = (SqlCommand)dbCommand;
-            var result = sqlDataAdapter.Fill(ds);
+            sqlDataAdapter.Fill(ds);
             return ds;
         }
 
@@ -38,11 +47,20 @@ namespace Orm.Son.Core
 
         public static object ExeSqlWithParams(this Tuple<string, List<SqlParameter>> sql, IDbConnection dbConn)
         {
-            var dbCommand = dbConn.CreateCommand();
-            dbCommand.CommandText = sql.Item1;
-            sql.Item2.ForEach(t=> dbCommand.Parameters.Add(t));
-            var result = dbCommand.ExecuteScalar();
-            return result;
+            try
+            {
+                dbConn.Open();
+                var dbCommand = dbConn.CreateCommand();
+                dbCommand.CommandText = sql.Item1;
+                sql.Item2.ForEach(t => dbCommand.Parameters.Add(t));
+                var result = dbCommand.ExecuteScalar();
+                return result;
+            }
+            finally
+            {
+                dbConn.Close();
+            }
+
         }
 
         public static DataSet ExeQueryWithParams(this Tuple<string, List<SqlParameter>> sql, IDbConnection dbConn)
@@ -51,27 +69,36 @@ namespace Orm.Son.Core
             dbCommand.CommandText = sql.Item1;
             var sqlDataAdapter = new SqlDataAdapter();
             sqlDataAdapter.SelectCommand = (SqlCommand)dbCommand;
-            sql.Item2.ForEach(t=> sqlDataAdapter.SelectCommand.Parameters.Add(t));
+            sql.Item2.ForEach(t => sqlDataAdapter.SelectCommand.Parameters.Add(t));
             var ds = new DataSet();
-            var result = sqlDataAdapter.Fill(ds);
+            sqlDataAdapter.Fill(ds);
             return ds;
         }
 
-        public static Tuple<DataSet,object> ExeSqlWithParamsPage(this Tuple<string, List<SqlParameter>,string> sql, IDbConnection dbConn)
+        public static Tuple<DataSet, object> ExeSqlWithParamsPage(this Tuple<string, List<SqlParameter>, string> sql, IDbConnection dbConn)
         {
-            var dbCommand = dbConn.CreateCommand();
-            sql.Item2.ForEach(t => dbCommand.Parameters.Add(t));
+            try
+            {
+                dbConn.Open();
+                var dbCommand = dbConn.CreateCommand();
+                sql.Item2.ForEach(t => dbCommand.Parameters.Add(t));
 
-            dbCommand.CommandText = sql.Item1;
-            var sqlDataAdapter = new SqlDataAdapter();
-            sqlDataAdapter.SelectCommand = (SqlCommand)dbCommand;
-            var ds = new DataSet();
-            var resultData = sqlDataAdapter.Fill(ds);
+                dbCommand.CommandText = sql.Item1;
+                var sqlDataAdapter = new SqlDataAdapter();
+                sqlDataAdapter.SelectCommand = (SqlCommand)dbCommand;
+                var ds = new DataSet();
+                var resultData = sqlDataAdapter.Fill(ds);
 
-            dbCommand.CommandText = sql.Item3;
-            var resultTotal = dbCommand.ExecuteScalar();
+                dbCommand.CommandText = sql.Item3;
+                var resultTotal = dbCommand.ExecuteScalar();
+                return new Tuple<DataSet, object>(ds, resultTotal);
+            }
+            finally
+            {
 
-            return new Tuple<DataSet, object>(ds, resultTotal);
+                dbConn.Close();
+            }
+
         }
 
         #endregion
