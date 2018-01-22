@@ -1,11 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+VisualStudioVersion = 15.0.27130.2024
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orm.Son", "Orm.Son\Orm.Son.csproj", "{018CF1A6-B5F9-44B2-BAF8-2306729CB6A6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orm.Son.Test", "Orm.Son.Test\Orm.Son.Test.csproj", "{B7101B81-5641-4C61-AC8A-259A2ACB9D93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orm.Son.Core", "Orm.Son.Core\Orm.Son.Core.csproj", "{6423CA84-F130-4C9A-9F4F-F679591C8CD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orm.Son.Core.Test", "Orm.Son.Core.Test\Orm.Son.Core.Test.csproj", "{C563623C-689C-4B70-A333-B7ECA2D46C3C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +25,19 @@ Global
 		{B7101B81-5641-4C61-AC8A-259A2ACB9D93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7101B81-5641-4C61-AC8A-259A2ACB9D93}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7101B81-5641-4C61-AC8A-259A2ACB9D93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6423CA84-F130-4C9A-9F4F-F679591C8CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6423CA84-F130-4C9A-9F4F-F679591C8CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6423CA84-F130-4C9A-9F4F-F679591C8CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6423CA84-F130-4C9A-9F4F-F679591C8CD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C563623C-689C-4B70-A333-B7ECA2D46C3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C563623C-689C-4B70-A333-B7ECA2D46C3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C563623C-689C-4B70-A333-B7ECA2D46C3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C563623C-689C-4B70-A333-B7ECA2D46C3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20CA30FE-FCFC-4171-8F76-174727A23D8D}
 	EndGlobalSection
 EndGlobal
